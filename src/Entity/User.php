@@ -13,6 +13,7 @@ use App\Repository\UserRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
@@ -25,13 +26,18 @@ use Symfony\Component\Serializer\Attribute\Groups;
             controller: UserCreateAction::class,
             name: 'createUser'
         ),
+        new Post(
+            uriTemplate: '/users/auth',
+            denormalizationContext: ['groups' => ['user:auth']],
+            name: 'auth',
+        ),
         new Put(),
         new Delete()
     ],
     normalizationContext: ['groups' => ['user:read']],
     denormalizationContext: ['groups' => ['user:write']],
 )]
-class User implements PasswordAuthenticatedUserInterface
+class User implements PasswordAuthenticatedUserInterface, UserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -40,23 +46,23 @@ class User implements PasswordAuthenticatedUserInterface
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['user:read', 'user:write'])]
+    #[Groups(['user:read', 'user:write', 'user-auth'])]
     private ?string $email = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['user:write'])]
+    #[Groups(['user:write', 'user-auth'])]
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['user:read', 'user:write'])]
+    #[Groups(['user:read', 'user:write', 'user-auth'])]
     private ?string $fullname = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['user:read', 'user:write'])]
+    #[Groups(['user:read', 'user:write', 'user-auth'])]
     private ?string $surname = null;
 
     #[ORM\Column(type: Types::SMALLINT)]
-    #[Groups(['user:read', 'user:write'])]
+    #[Groups(['user:read', 'user:write', 'user-auth'])]
     private ?int $age = null;
 
     public function getId(): ?int
@@ -122,5 +128,19 @@ class User implements PasswordAuthenticatedUserInterface
         $this->age = $age;
 
         return $this;
+    }
+
+    public function getRoles(): array
+    {
+        return ['ROLE_USER'];
+    }
+
+    public function eraseCredentials(): void
+    {
+    }
+
+    public function getUserIdentifier(): string
+    {
+        return $this->getEmail();
     }
 }
